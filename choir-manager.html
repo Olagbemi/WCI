@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choir Manager - Attendance & Songs</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        header p {
+            opacity: 0.95;
+            font-size: 1.1em;
+        }
+
+        nav {
+            display: flex;
+            border-bottom: 2px solid #f0f0f0;
+            background: #f8f9fa;
+            overflow-x: auto;
+        }
+
+        nav button {
+            flex: 1;
+            padding: 16px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+            min-width: 120px;
+            border-bottom: 3px solid transparent;
+            text-align: center;
+        }
+
+        nav button:hover {
+            color: #667eea;
+            background: #f0f0f0;
+        }
+
+        nav button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            background: white;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .attendance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .member-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .member-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.1);
+            transform: translateY(-1px);
+        }
+
+        .member-card.present {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .member-card.absent {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+
+        .member-name {
+            font-size: 0.95em;
+            font-weight: bold;
+            color: #333;
+            margin: 6px 0;
+            word-break: break-word;
+        }
+
+        .member-part {
+            color: #666;
+            font-size: 0.8em;
+            margin-bottom: 8px;
+            padding: 2px 6px;
+            background: #f0f0f0;
+            border-radius: 3px;
+            display: inline-block;
+        }
+
+        .status-badge {
+            font-size: 0.7em;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 20px;
+            margin-top: 6px;
+            display: inline-block;
+        }
+
+        .status-badge.present {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status-badge.absent {
+            background: #f44336;
+            color: white;
+        }
+
+        .song-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 5px solid #667eea;
+        }
+
+        .song-card h3 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.3em;
+        }
+
+        .song-part {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .song-part h4 {
+            color: #667eea;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .song-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            font-size: 1em;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-box h3 {
+            font-size: 2.5em;
+            margin-bottom: 8px;
+        }
+
+        .stat-box p {
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .attendance-table th,
+        .attendance-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .attendance-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .attendance-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 28px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state h2 {
+            color: #666;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // ⚠️ PASTE YOUR GOOGLE APPS SCRIPT URL HERE ⚠️
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4y8PVzCqByBeSCKZNdxAb4p5vq4J4QuA2wk7QBBAHN9X1kdr3R6nhSH9Y9_HmK0pSPQ/exec';
+
+        function ChoirManager() {
+            const [activeTab, setActiveTab] = useState('attendance');
+            const [members, setMembers] = useState([]);
+            const [songs, setSongs] = useState([]);
+            const [rehearsals, setRehearsals] = useState([]);
+            const [currentRehearsalIndex, setCurrentRehearsalIndex] = useState(0);
+            const [showAddMember, setShowAddMember] = useState(false);
+            const [showAddSong, setShowAddSong] = useState(false);
+            const [showAddRehearsal, setShowAddRehearsal] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [lastAction, setLastAction] = useState(null);
+            const [newMember, setNewMember] = useState({ name: '', phone: '', part: 'Soprano' });
+            const [editingMemberId, setEditingMemberId] = useState(null);
+            const [editMember, setEditMember] = useState({ name: '', phone: '', part: 'Soprano' });
+            const [newSong, setNewSong] = useState({ title: '', soprano: '', alto: '', tenor: '' });
+            const [newRehearsal, setNewRehearsal] = useState({ date: '' });
+            const [syncStatus, setSyncStatus] = useState('ready');
+
+            // Cloud sync functions
+            const syncToCloud = async (membersData, rehearsalsData) => {
+                if (APPS_SCRIPT_URL === 'PASTE_YOUR_DEPLOYMENT_URL_HERE') return;
+                try {
+                    await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        payload: JSON.stringify({ action: 'saveMembers', members: membersData })
+                    });
+                    await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        payload: JSON.stringify({ action: 'saveRehearsals', rehearsals: rehearsalsData })
+                    });
+                    setSyncStatus('synced');
+                    setTimeout(() => setSyncStatus('ready'), 2000);
+                } catch(e) {
+                    console.log('Cloud sync unavailable, using local storage');
+                }
+            };
+
+            const loadFromCloud = async () => {
+                if (APPS_SCRIPT_URL === 'PASTE_YOUR_DEPLOYMENT_URL_HERE') return false;
+                try {
+                    const membersRes = await fetch(APPS_SCRIPT_URL + '?action=loadMembers');
+                    const membersData = await membersRes.json();
+                    const rehearsalsRes = await fetch(APPS_SCRIPT_URL + '?action=loadRehearsals');
+                    const rehearsalsData = await rehearsalsRes.json();
+                    if (membersData.members) setMembers(membersData.members);
+                    if (rehearsalsData.rehearsals) setRehearsals(rehearsalsData.rehearsals);
+                    return true;
+                } catch(e) {
+                    console.log('Could not load from cloud');
+                    return false;
+                }
+            };
+
+            // Load data from localStorage
+            useEffect(() => {
+                const savedMembers = localStorage.getItem('choirMembers');
+                const savedSongs = localStorage.getItem('choirSongs');
+                const savedRehearsals = localStorage.getItem('choirRehearsals');
+
+                if (savedMembers) setMembers(JSON.parse(savedMembers));
+                if (savedSongs) setSongs(JSON.parse(savedSongs));
+                if (savedRehearsals) setRehearsals(JSON.parse(savedRehearsals));
+
+                // Initialize with sample data if empty
+                if (!savedMembers) initializeSampleData();
+            }, []);
+
+            // Save to localStorage AND sync to cloud whenever data changes
+            useEffect(() => {
+                localStorage.setItem('choirMembers', JSON.stringify(members));
+                if (members.length > 0) syncToCloud(members, rehearsals);
+            }, [members]);
+
+            useEffect(() => {
+                localStorage.setItem('choirSongs', JSON.stringify(songs));
+            }, [songs]);
+
+            useEffect(() => {
+                localStorage.setItem('choirRehearsals', JSON.stringify(rehearsals));
+                if (rehearsals.length > 0) syncToCloud(members, rehearsals);
+            }, [rehearsals]);
+
+            const initializeSampleData = () => {
+                const sampleMembers = [
+                    { id: 1, name: 'Sample Soprano 1', phone: '+234 701 234 5678', part: 'Soprano' },
+                    { id: 2, name: 'Sample Alto 1', phone: '+234 702 234 5678', part: 'Alto' },
+                    { id: 3, name: 'Sample Tenor 1', phone: '+234 703 234 5678', part: 'Tenor' },
+                ];
+                const sampleSongs = [
+                    {
+                        id: 1,
+                        title: 'Sample Song',
+                        soprano: 'https://www.youtube.com',
+                        alto: 'https://www.youtube.com',
+                        tenor: 'https://www.youtube.com'
+                    }
+                ];
+                const sampleRehearsals = [
+                    { id: 1, date: new Date().toISOString().split('T')[0], attendance: {} }
+                ];
+                setMembers(sampleMembers);
+                setSongs(sampleSongs);
+                setRehearsals(sampleRehearsals);
+            };
+
+            const addMember = () => {
+                if (newMember.name.trim()) {
+                    const newId = Math.max(...members.map(m => m.id), 0) + 1;
+                    setMembers([...members, { ...newMember, id: newId }]);
+                    setNewMember({ name: '', phone: '', part: 'Soprano' });
+                    setShowAddMember(false);
+                }
+            };
+
+            const startEditMember = (member) => {
+                setEditingMemberId(member.id);
+                setEditMember({ name: member.name, phone: member.phone || '', part: member.part });
+            };
+
+            const saveEditMember = () => {
+                if (editMember.name.trim()) {
+                    setMembers(members.map(m => m.id === editingMemberId ? { ...m, name: editMember.name, phone: editMember.phone, part: editMember.part } : m));
+                    setEditingMemberId(null);
+                }
+            };
+
+            const cancelEditMember = () => {
+                setEditingMemberId(null);
+            };
+
+            const addSong = () => {
+                if (newSong.title.trim()) {
+                    const newId = Math.max(...songs.map(s => s.id), 0) + 1;
+                    setSongs([...songs, { ...newSong, id: newId }]);
+                    setNewSong({ title: '', soprano: '', alto: '', tenor: '' });
+                    setShowAddSong(false);
+                }
+            };
+
+            const addRehearsal = () => {
+                if (newRehearsal.date) {
+                    const newId = Math.max(...rehearsals.map(r => r.id), 0) + 1;
+                    const attendance = {};
+                    members.forEach(m => attendance[m.id] = 'unmarked');
+                    const newRehearsals = [...rehearsals, { id: newId, date: newRehearsal.date, attendance }];
+                    setRehearsals(newRehearsals);
+                    setCurrentRehearsalIndex(newRehearsals.length - 1);
+                    setNewRehearsal({ date: '' });
+                    setShowAddRehearsal(false);
+                }
+            };
+
+            const toggleAttendance = (memberId, status) => {
+                const current = rehearsals[currentRehearsalIndex];
+                if (current) {
+                    const newRehearsals = [...rehearsals];
+                    const oldStatus = current.attendance[memberId] || 'unmarked';
+                    newRehearsals[currentRehearsalIndex].attendance[memberId] = status;
+                    setRehearsals(newRehearsals);
+                    setLastAction({ memberId, oldStatus, newStatus: status });
+                }
+            };
+
+            const undoLastAction = () => {
+                if (lastAction) {
+                    const current = rehearsals[currentRehearsalIndex];
+                    if (current) {
+                        const newRehearsals = [...rehearsals];
+                        newRehearsals[currentRehearsalIndex].attendance[lastAction.memberId] = lastAction.oldStatus;
+                        setRehearsals(newRehearsals);
+                        setLastAction(null);
+                    }
+                }
+            };
+
+            const filteredMembers = members.filter(m =>
+                m.name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            const deleteMember = (id) => {
+                setMembers(members.filter(m => m.id !== id));
+            };
+
+            const deleteRehearsal = (index) => {
+                if (window.confirm(`Delete rehearsal on ${rehearsals[index].date}? This action cannot be undone.`)) {
+                    const newRehearsals = rehearsals.filter((_, idx) => idx !== index);
+                    setRehearsals(newRehearsals);
+                    if (currentRehearsalIndex >= newRehearsals.length && newRehearsals.length > 0) {
+                        setCurrentRehearsalIndex(newRehearsals.length - 1);
+                    }
+                }
+            };
+
+            const resetAttendance = () => {
+                if (window.confirm(`Clear all attendance marks for ${rehearsals[currentRehearsalIndex].date}? You'll need to re-mark everyone.`)) {
+                    const newRehearsals = [...rehearsals];
+                    const attendance = {};
+                    members.forEach(m => attendance[m.id] = 'unmarked');
+                    newRehearsals[currentRehearsalIndex].attendance = attendance;
+                    setRehearsals(newRehearsals);
+                    setLastAction(null);
+                    setSearchTerm('');
+                }
+            };
+
+            const getAttendanceStats = () => {
+                if (rehearsals.length === 0 || currentRehearsalIndex >= rehearsals.length) {
+                    return { present: 0, absent: 0, total: filteredMembers.length };
+                }
+                const current = rehearsals[currentRehearsalIndex];
+                let present = 0;
+                filteredMembers.forEach(member => {
+                    const status = current.attendance[member.id];
+                    if (status === 'present') present++;
+                });
+                const absent = filteredMembers.length - present;
+                return { present, absent, total: filteredMembers.length };
+            };
+
+            const stats = getAttendanceStats();
+
+            return (
+                <div className="container">
+                    <header>
+                        <h1>🎵 Choir Manager</h1>
+                        <p>Attendance & Song Library for your SAT Choir</p>
+                    </header>
+
+                    <nav>
+                        <button
+                            className={activeTab === 'attendance' ? 'active' : ''}
+                            onClick={() => setActiveTab('attendance')}
+                        >
+                            📋 Attendance
+                        </button>
+                        <button
+                            className={activeTab === 'songs' ? 'active' : ''}
+                            onClick={() => setActiveTab('songs')}
+                        >
+                            🎼 Songs
+                        </button>
+                        <button
+                            className={activeTab === 'members' ? 'active' : ''}
+                            onClick={() => setActiveTab('members')}
+                        >
+                            👥 Members
+                        </button>
+                        <button
+                            className={activeTab === 'reports' ? 'active' : ''}
+                            onClick={() => setActiveTab('reports')}
+                        >
+                            📊 Reports
+                        </button>
+                    </nav>
+
+                    <div className="content">
+                        {/* Attendance Section */}
+                        {activeTab === 'attendance' && (
+                            <div className="section active">
+                                <h2>Quick Attendance Check-In</h2>
+                                {rehearsals.length === 0 ? (
+                                    <div className="empty-state">
+                                        <h2>No rehearsals yet</h2>
+                                        <p>Add a rehearsal to start marking attendance</p>
+                                        <button className="btn btn-primary" onClick={() => setShowAddRehearsal(true)} style={{ marginTop: '20px' }}>
+                                            Add Rehearsal
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div style={{ marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                            <div>
+                                                <label style={{ marginRight: '10px', fontWeight: '500' }}>Date:</label>
+                                                <select
+                                                    value={currentRehearsalIndex}
+                                                    onChange={(e) => setCurrentRehearsalIndex(parseInt(e.target.value))}
+                                                    style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ddd' }}
+                                                >
+                                                    {rehearsals.map((r, idx) => (
+                                                        <option key={idx} value={idx}>{r.date}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <button className="btn btn-secondary" onClick={() => setShowAddRehearsal(true)}>
+                                                + Add Rehearsal
+                                            </button>
+                                            <button
+                                                className="btn btn-secondary"
+                                                onClick={resetAttendance}
+                                                style={{ background: '#fff3cd', color: '#856404' }}
+                                            >
+                                                🔄 Reset Attendance
+                                            </button>
+                                            <button
+                                                className="btn btn-secondary"
+                                                onClick={() => deleteRehearsal(currentRehearsalIndex)}
+                                                style={{ background: '#ffebee', color: '#c62828' }}
+                                            >
+                                                🗑 Delete This Date
+                                            </button>
+                                            {lastAction && (
+                                                <button className="btn btn-secondary" onClick={undoLastAction} style={{ background: '#fff3cd', borderColor: '#ffc107', color: '#333' }}>
+                                                    ↶ Undo
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <div className="stats-grid">
+                                            <div className="stat-box">
+                                                <h3>{stats.present}</h3>
+                                                <p>Present</p>
+                                            </div>
+                                            <div className="stat-box">
+                                                <h3>{stats.absent}</h3>
+                                                <p>Absent</p>
+                                            </div>
+                                            <div className="stat-box">
+                                                <h3>{stats.total}</h3>
+                                                <p>Total Members</p>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ marginBottom: '20px' }}>
+                                            <input
+                                                type="text"
+                                                placeholder="🔍 Search member by name..."
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                style={{
+                                                    width: '100%',
+                                                    padding: '12px 16px',
+                                                    borderRadius: '8px',
+                                                    border: '2px solid #e0e0e0',
+                                                    fontSize: '1em',
+                                                    fontFamily: 'inherit'
+                                                }}
+                                            />
+                                        </div>
+
+                                        <table className="attendance-table" style={{ marginTop: '20px' }}>
+                                            <thead>
+                                                <tr>
+                                                    <th style={{ width: '40%' }}>Name</th>
+                                                    <th style={{ width: '20%' }}>Voice Part</th>
+                                                    <th style={{ textAlign: 'center', width: '20%' }}>✓ Present</th>
+                                                    <th style={{ textAlign: 'center', width: '20%' }}>✗ Absent</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {filteredMembers.map(member => {
+                                                    const current = rehearsals[currentRehearsalIndex];
+                                                    const status = current?.attendance[member.id] || 'unmarked';
+                                                    return (
+                                                        <tr key={member.id} style={{ backgroundColor: status === 'present' ? '#e8f5e9' : status === 'absent' ? '#ffebee' : 'transparent' }}>
+                                                            <td style={{ fontWeight: '500' }}>{member.name}</td>
+                                                            <td style={{ fontSize: '0.9em', color: '#666' }}>{member.part}</td>
+                                                            <td style={{ textAlign: 'center' }}>
+                                                                <input
+                                                                    type="radio"
+                                                                    name={`attendance-${member.id}`}
+                                                                    checked={status === 'present'}
+                                                                    onChange={() => toggleAttendance(member.id, 'present')}
+                                                                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                                                                />
+                                                            </td>
+                                                            <td style={{ textAlign: 'center' }}>
+                                                                <input
+                                                                    type="radio"
+                                                                    name={`attendance-${member.id}`}
+                                                                    checked={status === 'absent'}
+                                                                    onChange={() => toggleAttendance(member.id, 'absent')}
+                                                                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                                                                />
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                        {filteredMembers.length === 0 && (
+                                            <div className="empty-state">
+                                                <p>No members found matching "{searchTerm}"</p>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Songs Section */}
+                        {activeTab === 'songs' && (
+                            <div className="section active">
+                                <h2>Song Library</h2>
+                                <button className="btn btn-primary" onClick={() => setShowAddSong(true)} style={{ marginBottom: '20px' }}>
+                                    Add New Song
+                                </button>
+
+                                {songs.length === 0 ? (
+                                    <div className="empty-state">
+                                        <h2>No songs yet</h2>
+                                        <p>Add songs with YouTube links for each voice part</p>
+                                    </div>
+                                ) : (
+                                    songs.map(song => (
+                                        <div key={song.id} className="song-card">
+                                            <h3>{song.title}</h3>
+
+                                            {['Soprano', 'Alto', 'Tenor'].map(part => {
+                                                const key = part.toLowerCase();
+                                                const link = song[key];
+                                                return (
+                                                    <div key={part} className="song-part">
+                                                        <h4>🎤 {part}</h4>
+                                                        {link ? (
+                                                            <div className="song-links">
+                                                                <a href={link} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                                                                    📺 YouTube Link
+                                                                </a>
+                                                            </div>
+                                                        ) : (
+                                                            <p style={{ color: '#999' }}>No link added yet</p>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        )}
+
+                        {/* Members Section */}
+                        {activeTab === 'members' && (
+                            <div className="section active">
+                                <h2>Member Directory</h2>
+                                <button className="btn btn-primary" onClick={() => setShowAddMember(true)} style={{ marginBottom: '20px' }}>
+                                    Add Member
+                                </button>
+
+                                {members.length === 0 ? (
+                                    <div className="empty-state">
+                                        <h2>No members yet</h2>
+                                        <p>Start by adding your choir members</p>
+                                    </div>
+                                ) : (
+                                    <table className="attendance-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Phone</th>
+                                                <th>Voice Part</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {members.map(member => (
+                                                <tr key={member.id}>
+                                                    <td>{member.name}</td>
+                                                    <td>{member.phone || '-'}</td>
+                                                    <td>{member.part}</td>
+                                                    <td>
+                                                        <button
+                                                            className="btn btn-secondary"
+                                                            onClick={() => startEditMember(member)}
+                                                            style={{ marginRight: '5px' }}
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            className="btn btn-secondary"
+                                                            onClick={() => deleteMember(member.id)}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Reports Section */}
+                        {activeTab === 'reports' && (
+                            <div className="section active">
+                                <h2>Attendance Reports</h2>
+                                {rehearsals.length === 0 ? (
+                                    <div className="empty-state">
+                                        <h2>No rehearsal data yet</h2>
+                                        <p>Add rehearsals to see attendance reports</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <h3 style={{ marginTop: '30px', marginBottom: '20px', color: '#333' }}>📊 Summary by Rehearsal Date</h3>
+                                        <table className="attendance-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Rehearsal Date</th>
+                                                    <th>Present</th>
+                                                    <th>Absent</th>
+                                                    <th>Total</th>
+                                                    <th>Attendance %</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {rehearsals.map((r, idx) => {
+                                                    let present = 0;
+                                                    Object.values(r.attendance).forEach(status => {
+                                                        if (status === 'present') present++;
+                                                    });
+                                                    const absent = members.length - present;
+                                                    const percentage = members.length > 0 ? Math.round((present / members.length) * 100) : 0;
+                                                    return (
+                                                        <tr key={idx}>
+                                                            <td style={{ fontWeight: 'bold' }}>{r.date}</td>
+                                                            <td style={{ backgroundColor: '#e8f5e9', fontWeight: 'bold', color: '#2e7d32' }}>{present}</td>
+                                                            <td style={{ backgroundColor: '#ffebee', fontWeight: 'bold', color: '#c62828' }}>{absent}</td>
+                                                            <td>{members.length}</td>
+                                                            <td style={{ fontWeight: 'bold', color: '#667eea' }}>{percentage}%</td>
+                                                            <td>
+                                                                <button
+                                                                    className="btn btn-secondary"
+                                                                    onClick={() => deleteRehearsal(idx)}
+                                                                    style={{ background: '#ffebee', color: '#c62828', padding: '6px 12px', fontSize: '0.85em' }}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+
+                                        <h3 style={{ marginTop: '40px', marginBottom: '20px', color: '#333' }}>📋 Detailed Attendance History</h3>
+                                        <table className="attendance-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Member</th>
+                                                    <th>Part</th>
+                                                    {rehearsals.map((r, idx) => (
+                                                        <th key={idx} style={{ fontSize: '0.9em' }}>{r.date}</th>
+                                                    ))}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {members.map(member => (
+                                                    <tr key={member.id}>
+                                                        <td style={{ fontWeight: 'bold' }}>{member.name}</td>
+                                                        <td>{member.part}</td>
+                                                        {rehearsals.map((r, idx) => {
+                                                            const status = r.attendance[member.id] || 'unmarked';
+                                                            const bgColor = status === 'present' ? '#e8f5e9' : status === 'absent' ? '#ffebee' : 'transparent';
+                                                            const textColor = status === 'present' ? '#2e7d32' : status === 'absent' ? '#c62828' : '#999';
+                                                            return <td key={idx} style={{ backgroundColor: bgColor, fontWeight: 'bold', color: textColor }}>{status}</td>;
+                                                        })}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Add Member Modal */}
+                    <div className={`modal-backdrop ${showAddMember ? 'show' : ''}`}>
+                        <div className="modal">
+                            <h2>Add New Member</h2>
+                            <div className="form-group">
+                                <label>Name</label>
+                                <input
+                                    type="text"
+                                    value={newMember.name}
+                                    onChange={(e) => setNewMember({ ...newMember, name: e.target.value })}
+                                    placeholder="Member name"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Phone Number</label>
+                                <input
+                                    type="tel"
+                                    value={newMember.phone}
+                                    onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
+                                    placeholder="Phone number (optional)"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Voice Part</label>
+                                <select
+                                    value={newMember.part}
+                                    onChange={(e) => setNewMember({ ...newMember, part: e.target.value })}
+                                >
+                                    <option>Soprano</option>
+                                    <option>Alto</option>
+                                    <option>Tenor</option>
+                                </select>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                <button className="btn btn-secondary" onClick={() => setShowAddMember(false)}>
+                                    Cancel
+                                </button>
+                                <button className="btn btn-primary" onClick={addMember}>
+                                    Add Member
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Edit Member Modal */}
+                    <div className={`modal-backdrop ${editingMemberId !== null ? 'show' : ''}`}>
+                        <div className="modal">
+                            <h2>Edit Member</h2>
+                            <div className="form-group">
+                                <label>Name</label>
+                                <input
+                                    type="text"
+                                    value={editMember.name}
+                                    onChange={(e) => setEditMember({ ...editMember, name: e.target.value })}
+                                    placeholder="Member name"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Phone Number</label>
+                                <input
+                                    type="tel"
+                                    value={editMember.phone}
+                                    onChange={(e) => setEditMember({ ...editMember, phone: e.target.value })}
+                                    placeholder="Phone number (optional)"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Voice Part</label>
+                                <select
+                                    value={editMember.part}
+                                    onChange={(e) => setEditMember({ ...editMember, part: e.target.value })}
+                                >
+                                    <option>Soprano</option>
+                                    <option>Alto</option>
+                                    <option>Tenor</option>
+                                </select>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                <button className="btn btn-secondary" onClick={cancelEditMember}>
+                                    Cancel
+                                </button>
+                                <button className="btn btn-primary" onClick={saveEditMember}>
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Add Song Modal */}
+                    <div className={`modal-backdrop ${showAddSong ? 'show' : ''}`}>
+                        <div className="modal">
+                            <h2>Add New Song</h2>
+                            <div className="form-group">
+                                <label>Song Title</label>
+                                <input
+                                    type="text"
+                                    value={newSong.title}
+                                    onChange={(e) => setNewSong({ ...newSong, title: e.target.value })}
+                                    placeholder="Song name"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Soprano YouTube Link</label>
+                                <input
+                                    type="text"
+                                    value={newSong.soprano}
+                                    onChange={(e) => setNewSong({ ...newSong, soprano: e.target.value })}
+                                    placeholder="https://youtube.com/..."
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Alto YouTube Link</label>
+                                <input
+                                    type="text"
+                                    value={newSong.alto}
+                                    onChange={(e) => setNewSong({ ...newSong, alto: e.target.value })}
+                                    placeholder="https://youtube.com/..."
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Tenor YouTube Link</label>
+                                <input
+                                    type="text"
+                                    value={newSong.tenor}
+                                    onChange={(e) => setNewSong({ ...newSong, tenor: e.target.value })}
+                                    placeholder="https://youtube.com/..."
+                                />
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                <button className="btn btn-secondary" onClick={() => setShowAddSong(false)}>
+                                    Cancel
+                                </button>
+                                <button className="btn btn-primary" onClick={addSong}>
+                                    Add Song
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Add Rehearsal Modal */}
+                    <div className={`modal-backdrop ${showAddRehearsal ? 'show' : ''}`}>
+                        <div className="modal">
+                            <h2>Add New Rehearsal</h2>
+                            <div className="form-group">
+                                <label>Rehearsal Date</label>
+                                <input
+                                    type="date"
+                                    value={newRehearsal.date}
+                                    onChange={(e) => setNewRehearsal({ ...newRehearsal, date: e.target.value })}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                <button className="btn btn-secondary" onClick={() => setShowAddRehearsal(false)}>
+                                    Cancel
+                                </button>
+                                <button className="btn btn-primary" onClick={addRehearsal}>
+                                    Add Rehearsal
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<ChoirManager />);
+    </script>
+</body>
+</html>
