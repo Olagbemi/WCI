@@ -213,7 +213,7 @@
         const { useState, useEffect } = React;
 
         // ⚠️ PASTE YOUR GOOGLE APPS SCRIPT URL HERE ⚠️
-        const APPS_SCRIPT_URL = 'PASTE_YOUR_DEPLOYMENT_URL_HERE';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz4y8PVzCqByBeSCKZNdxAb4p5vq4J4QuA2wk7QBBAHN9X1kdr3R6nhSH9Y9_HmK0pSPQ/exec';
 
         function ChoirManager() {
             const [activeTab, setActiveTab] = useState('attendance');
