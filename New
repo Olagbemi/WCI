@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choir Manager - Attendance & Songs</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        header h1 { font-size: 2.5em; margin-bottom: 8px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
+        header p { opacity: 0.95; font-size: 1.1em; }
+        .sync-bar {
+            background: #f0f0f0;
+            padding: 12px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #ddd;
+        }
+        .sync-status { font-size: 0.9em; color: #667eea; font-weight: 500; }
+        .sync-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+        .sync-btn:hover { background: #5568d3; }
+        nav {
+            display: flex;
+            border-bottom: 2px solid #f0f0f0;
+            background: #f8f9fa;
+            overflow-x: auto;
+        }
+        nav button {
+            flex: 1;
+            padding: 16px 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+            min-width: 120px;
+            border-bottom: 3px solid transparent;
+            text-align: center;
+        }
+        nav button:hover { color: #667eea; background: #f0f0f0; }
+        nav button.active { color: #667eea; border-bottom-color: #667eea; background: white; }
+        .content { padding: 40px; }
+        .section { display: none; }
+        .section.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-box h3 { font-size: 2.5em; margin-bottom: 8px; }
+        .stat-box p { opacity: 0.9; font-size: 0.95em; }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        select {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            font-size: 1em;
+        }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); }
+        .btn-secondary { background: #f0f0f0; color: #333; }
+        .btn-secondary:hover { background: #e0e0e0; }
+        .btn-danger { background: #ffebee; color: #c62828; }
+        .btn-warning { background: #fff3cd; color: #856404; }
+        input[type="text"], input[type="tel"], input[type="date"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+            margin-bottom: 15px;
+        }
+        input:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        th { background: #f8f9fa; font-weight: 600; color: #333; }
+        tr:hover { background: #f8f9fa; }
+        input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        .status-present { background: #e8f5e9; }
+        .status-absent { background: #ffebee; }
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-backdrop.show { display: flex; }
+        .modal {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .modal h3 { margin-bottom: 20px; color: #333; }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        .empty-state h3 { color: #666; margin-bottom: 10px; }
+        .event-type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .event-type-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        .event-type-btn.active {
+            border-color: #667eea;
+            background: #f0f0f0;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // ⚠️ PASTE YOUR GOOGLE APPS SCRIPT URL HERE ⚠️
+        const APPS_SCRIPT_URL = 'PASTE_YOUR_DEPLOYMENT_URL_HERE';
+
+        function ChoirManager() {
+            const [activeTab, setActiveTab] = useState('attendance');
+            const [members, setMembers] = useState([]);
+            const [songs, setSongs] = useState([]);
+            const [rehearsals, setRehearsals] = useState([]);
+            const [currentRehearsalIndex, setCurrentRehearsalIndex] = useState(0);
+            const [syncStatus, setSyncStatus] = useState('ready');
+            const [showAddRehearsal, setShowAddRehearsal] = useState(false);
+            const [newRehearsal, setNewRehearsal] = useState({ date: '', type: 'Rehearsal' });
+            const [eventType, setEventType] = useState('Rehearsal');
+
+            // Cloud sync functions
+            const syncToCloud = async (membersData, rehearsalsData) => {
+                if (APPS_SCRIPT_URL === 'PASTE_YOUR_DEPLOYMENT_URL_HERE') {
+                    setSyncStatus('⚠️ Configure Apps Script URL');
+                    return;
+                }
+                try {
+                    setSyncStatus('Syncing...');
+                    await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        payload: JSON.stringify({ action: 'saveMembers', members: membersData })
+                    });
+                    await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        payload: JSON.stringify({ action: 'saveRehearsals', rehearsals: rehearsalsData })
+                    });
+                    setSyncStatus('✓ Synced');
+                    setTimeout(() => setSyncStatus('ready'), 3000);
+                } catch(e) {
+                    setSyncStatus('Using local storage');
+                }
+            };
+
+            const loadFromCloud = async () => {
+                if (APPS_SCRIPT_URL === 'PASTE_YOUR_DEPLOYMENT_URL_HERE') {
+                    setSyncStatus('⚠️ Apps Script URL needed');
+                    return;
+                }
+                setSyncStatus('Loading from cloud...');
+                try {
+                    const membersRes = await fetch(APPS_SCRIPT_URL + '?action=loadMembers');
+                    const membersData = await membersRes.json();
+                    const rehearsalsRes = await fetch(APPS_SCRIPT_URL + '?action=loadRehearsals');
+                    const rehearsalsData = await rehearsalsRes.json();
+
+                    if (membersData.members && membersData.members.length > 0) {
+                        setMembers(membersData.members);
+                        localStorage.setItem('choirMembers', JSON.stringify(membersData.members));
+                    }
+                    if (rehearsalsData.rehearsals && rehearsalsData.rehearsals.length > 0) {
+                        setRehearsals(rehearsalsData.rehearsals);
+                        localStorage.setItem('choirRehearsals', JSON.stringify(rehearsalsData.rehearsals));
+                    }
+                    setSyncStatus('✓ Loaded from cloud');
+                    setTimeout(() => setSyncStatus('ready'), 2000);
+                } catch(e) {
+                    setSyncStatus('Cloud unavailable - using local');
+                }
+            };
+
+            // Initial load
+            useEffect(() => {
+                const savedMembers = localStorage.getItem('choirMembers');
+                const savedRehearsals = localStorage.getItem('choirRehearsals');
+
+                if (savedMembers) setMembers(JSON.parse(savedMembers));
+                if (savedRehearsals) setRehearsals(JSON.parse(savedRehearsals));
+
+                // Try to load from cloud on startup
+                loadFromCloud();
+            }, []);
+
+            // Auto-sync whenever data changes
+            useEffect(() => {
+                localStorage.setItem('choirMembers', JSON.stringify(members));
+                if (members.length > 0) syncToCloud(members, rehearsals);
+            }, [members]);
+
+            useEffect(() => {
+                localStorage.setItem('choirRehearsals', JSON.stringify(rehearsals));
+                if (rehearsals.length > 0) syncToCloud(members, rehearsals);
+            }, [rehearsals]);
+
+            const addRehearsal = () => {
+                if (newRehearsal.date) {
+                    const newId = Math.max(...rehearsals.map(r => r.id || 0), 0) + 1;
+                    const attendance = {};
+                    members.forEach(m => attendance[m.id] = 'unmarked');
+                    const newRehearsals = [...rehearsals, {
+                        id: newId,
+                        date: newRehearsal.date,
+                        type: eventType,
+                        attendance
+                    }];
+                    setRehearsals(newRehearsals);
+                    setCurrentRehearsalIndex(newRehearsals.length - 1);
+                    setNewRehearsal({ date: '', type: 'Rehearsal' });
+                    setEventType('Rehearsal');
+                    setShowAddRehearsal(false);
+                }
+            };
+
+            const markAttendance = (memberId, status) => {
+                const current = rehearsals[currentRehearsalIndex];
+                if (current) {
+                    const newRehearsals = [...rehearsals];
+                    newRehearsals[currentRehearsalIndex].attendance[memberId] = status;
+                    setRehearsals(newRehearsals);
+                }
+            };
+
+            const changeRehearsal = (index) => {
+                setCurrentRehearsalIndex(parseInt(index));
+            };
+
+            const getStats = () => {
+                if (!rehearsals[currentRehearsalIndex]) {
+                    return { present: 0, absent: 0, total: members.length };
+                }
+                const current = rehearsals[currentRehearsalIndex];
+                let present = 0;
+                members.forEach(m => {
+                    if (current.attendance[m.id] === 'present') present++;
+                });
+                return { present, absent: members.length - present, total: members.length };
+            };
+
+            const stats = getStats();
+
+            return (
+                <div className="container">
+                    <header>
+                        <h1>🎵 Choir Manager</h1>
+                        <p>Attendance & Song Library for your SAT Choir</p>
+                    </header>
+
+                    <div className="sync-bar">
+                        <div className="sync-status">{syncStatus}</div>
+                        <button className="sync-btn" onClick={loadFromCloud}>
+                            🔄 Load from Cloud
+                        </button>
+                    </div>
+
+                    <nav>
+                        <button className={`nav-btn ${activeTab === 'attendance' ? 'active' : ''}`} onclick="this.parentElement.querySelectorAll('button').forEach(b => b.classList.remove('active')); this.classList.add('active');">
+                            📋 Attendance
+                        </button>
+                        <button className={`nav-btn ${activeTab === 'members' ? 'active' : ''}`}>
+                            👥 Members
+                        </button>
+                        <button className={`nav-btn ${activeTab === 'reports' ? 'active' : ''}`}>
+                            📊 Reports
+                        </button>
+                    </nav>
+
+                    <div className="content">
+                        {activeTab === 'attendance' && (
+                            <div className="section active">
+                                <h2>Quick Attendance Check-In</h2>
+                                {rehearsals.length === 0 ? (
+                                    <div className="empty-state">
+                                        <h3>No events yet</h3>
+                                        <p>Add a rehearsal or Sunday service to start</p>
+                                        <button className="btn btn-primary" onClick={() => setShowAddRehearsal(true)} style={{ marginTop: '20px' }}>
+                                            + Add Event
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="controls">
+                                            <div>
+                                                <label>Event:</label>
+                                                <select onChange={(e) => changeRehearsal(e.target.value)} value={currentRehearsalIndex}>
+                                                    {rehearsals.map((r, idx) => (
+                                                        <option key={idx} value={idx}>
+                                                            {r.type} - {r.date}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <button className="btn btn-secondary" onClick={() => setShowAddRehearsal(true)}>
+                                                + Add Event
+                                            </button>
+                                        </div>
+
+                                        <div className="stats-grid">
+                                            <div className="stat-box">
+                                                <h3>{stats.present}</h3>
+                                                <p>Present</p>
+                                            </div>
+                                            <div className="stat-box">
+                                                <h3>{stats.absent}</h3>
+                                                <p>Absent</p>
+                                            </div>
+                                            <div className="stat-box">
+                                                <h3>{stats.total}</h3>
+                                                <p>Total</p>
+                                            </div>
+                                        </div>
+
+                                        <table className="attendance-table">
+                                            <thead>
+                                                <tr>
+                                                    <th style={{ width: '40%' }}>Name</th>
+                                                    <th style={{ width: '20%' }}>Part</th>
+                                                    <th style={{ width: '20%; textAlign: 'center' }}>✓ Present</th>
+                                                    <th style={{ width: '20%; textAlign: 'center' }}>✗ Absent</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {members.map(member => {
+                                                    const current = rehearsals[currentRehearsalIndex];
+                                                    const status = current?.attendance[member.id] || 'unmarked';
+                                                    return (
+                                                        <tr key={member.id} className={status === 'present' ? 'status-present' : status === 'absent' ? 'status-absent' : ''}>
+                                                            <td>{member.name}</td>
+                                                            <td>{member.part}</td>
+                                                            <td style={{ textAlign: 'center' }}>
+                                                                <input type="radio" name={`att_${member.id}`} checked={status === 'present'} onChange={() => markAttendance(member.id, 'present')} />
+                                                            </td>
+                                                            <td style={{ textAlign: 'center' }}>
+                                                                <input type="radio" name={`att_${member.id}`} checked={status === 'absent'} onChange={() => markAttendance(member.id, 'absent')} />
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Add Event Modal */}
+                    <div className={`modal-backdrop ${showAddRehearsal ? 'show' : ''}`}>
+                        <div className="modal">
+                            <h3>Add New Event</h3>
+
+                            <label>Event Type:</label>
+                            <div className="event-type-selector">
+                                <button
+                                    className={`event-type-btn ${eventType === 'Rehearsal' ? 'active' : ''}`}
+                                    onClick={() => setEventType('Rehearsal')}
+                                >
+                                    🎵 Rehearsal
+                                </button>
+                                <button
+                                    className={`event-type-btn ${eventType === 'Sunday Service' ? 'active' : ''}`}
+                                    onClick={() => setEventType('Sunday Service')}
+                                >
+                                    ⛪ Sunday Service
+                                </button>
+                            </div>
+
+                            <label>Date:</label>
+                            <input
+                                type="date"
+                                value={newRehearsal.date}
+                                onChange={(e) => setNewRehearsal({ ...newRehearsal, date: e.target.value })}
+                            />
+
+                            <div className="modal-buttons">
+                                <button className="btn btn-secondary" onClick={() => setShowAddRehearsal(false)}>
+                                    Cancel
+                                </button>
+                                <button className="btn btn-primary" onClick={addRehearsal}>
+                                    Add Event
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<ChoirManager />);
+    </script>
+</body>
+</html>
